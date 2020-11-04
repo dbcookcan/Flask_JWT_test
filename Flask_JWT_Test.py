@@ -1,12 +1,24 @@
 #!/usr/bin/python3
+# Flask_JWT_test
+# JWT POC code
+# David Cook, Nov 2020
+#
 from flask import Flask, jsonify, request, make_response
 import jwt
 import datetime
 from functools import wraps
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '[LAHJC;F?4R$[m4Lvm:g8WN?'
 
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per minute", "10 per second"],
+)
 
 def token_required(f):
     @wraps(f)
@@ -27,11 +39,13 @@ def token_required(f):
     return check_token
 
 @app.route('/unprotected')
+@limiter.limit("")
 def unprotected():
     return jsonify({'message' : 'Anyone can view this'})
 
 
 @app.route('/protected')
+@limiter.limit("")
 @token_required
 def protected():
     return jsonify({'message' : 'Token is currently valid'})
